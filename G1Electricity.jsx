@@ -1,8 +1,14 @@
 #include "TPM.jsx";
 
+var num = 4;
+
 var number = Number(prompt("Number of G1s","50"));
 var color = prompt("Color?","white");
 var width = prompt("Width?","500");
 var height = prompt("Height?","6");
 
-field(getDoc(),"g1",color,number,6,50,100,width,height);
+var group_flow = getDoc().groupItems.add();
+
+for (var i = 0; i < num; i++) {
+    drawFlow(group_flow,number/num,color,width,height,6,260,20);
+}

@@ -16,7 +16,7 @@ function getDoc() {
     return doc;
 }
 
-function g1(doc,group_g1,top,left,size,angle,scale,color,stroke,jetWidth) {
+function g1(group_g1,top,left,size,angle,scale,color,stroke,jetWidth) {
     var ctop = top - size / 2; 
     var cleft = left + size / 2;
     var min = 6.8;
@@ -48,12 +48,13 @@ function g1(doc,group_g1,top,left,size,angle,scale,color,stroke,jetWidth) {
         l3 = true;
     }
 
+    var col = 'black';
     var len = Math.random() * factor + min;
-    if (l1 == true) addLine(group_g1,cleft+1.8,ctop-3,cleft+1.5,ctop-len,jetWidth); // 7.4
+    if (l1 == true) addLine(group_g1,cleft+1.8,ctop-3,cleft+1.5,ctop-len,jetWidth,col); // 7.4
     len = Math.random() * factor+ min;
-    if (l2 == true) addLine(group_g1,cleft+0.2,ctop-3.5,cleft+0.3,ctop-len,jetWidth);  // 6.8
+    if (l2 == true) addLine(group_g1,cleft+0.2,ctop-3.5,cleft+0.3,ctop-len,jetWidth,col);  // 6.8
     len = Math.random() * factor + min;
-    if (l3 == true) addLine(group_g1,cleft-1,ctop-3.3,cleft-0.6,ctop-len,jetWidth); // 10
+    if (l3 == true) addLine(group_g1,cleft-1,ctop-3.3,cleft-0.6,ctop-len,jetWidth,col); // 10
 
     var circle = group_g1.pathItems.ellipse(top,left,size,size,false,true);
     circle.strokeWidth = stroke;
@@ -70,7 +71,7 @@ function g1(doc,group_g1,top,left,size,angle,scale,color,stroke,jetWidth) {
     );
 }
 
-function sun(doc,group_sun,top,left,side,scale,color,opacity) {
+function sun(group_sun,top,left,side,scale,color,opacity) {
     var number = Math.ceil(Math.random() * 5) + 3;
     var vart = 0;
     var varl = 0;
@@ -115,7 +116,7 @@ function drawEllipse(doc, number, size, width, height, thickness, xorg, yorg, co
         //pointText(doc,ang.toPrecision(4).toString()+" "+angle.toPrecision(4).toString(),x+8,y);
         scale = 70 + (Math.random() * 30);
         var group_g1 = group_ellipse.groupItems.add();
-        g1(doc,group_g1,y,x,size,ang-10,scale,color,0.7,0.2);
+        g1(doc,group_g1,y,x,size,ang-10,scale,color,0.7,0.35);
      }
 }
 
@@ -137,15 +138,15 @@ function drawPerpLinesCircle(doc, number, radius, length, thickness, xc, yc)
         var y1 = (radius/2) * Math.sin(rad) + yc;
         var x2 = ((radius+length)/2) * Math.cos(rad) + xc;
         var y2 = ((radius+length)/2) * Math.sin(rad) + yc;
-        var line = addLine(group_lines,x1,y1,x2,y2,thickness);
+        var line = addLine(group_lines,x1,y1,x2,y2,thickness,'black');
         var rad1 = ((angle-arrowAngle) * Math.PI)/180;
         var xa = x1 + (arrowLength * Math.cos(rad1));
         var ya = y1 + (arrowLength * Math.sin(rad1));
-        var line1 = addLine(group_lines,x1,y1,xa,ya,thickness);
+        var line1 = addLine(group_lines,x1,y1,xa,ya,thickness,'black');
         var rad2 = ((angle+arrowAngle) * Math.PI)/180;
         var xb = x1 + (arrowLength * Math.cos(rad2));
         var yb = y1 + (arrowLength * Math.sin(rad2));
-        var line1 = addLine(group_lines,x1,y1,xb,yb,thickness);
+        var line1 = addLine(group_lines,x1,y1,xb,yb,thickness,'black');
     }
 }
 
@@ -170,19 +171,19 @@ function drawPerpLinesCircleShadow(doc, number, radius, length, thickness, xc, y
         var x2 = ((radius+length)/2) * Math.cos(rad) + xc;
         var y2 = ((radius+length)/2) * Math.sin(rad) + yc;
 
-        var line = addLine(group_lines,x1,y1,x2,y2,thickness);
+        var line = addLine(group_lines,x1,y1,x2,y2,thickness,'black');
         line.resize(scale,scale,true,false,false,true,scale);
 
         var rad1 = ((angle-arrowAngle) * Math.PI)/180;
         var xa = x1 + (arrowLength * Math.cos(rad1));
         var ya = y1 + (arrowLength * Math.sin(rad1));
-        var line1 = addLine(group_lines,x1,y1,xa,ya,thickness);
+        var line1 = addLine(group_lines,x1,y1,xa,ya,thickness,'black');
         line1.resize(scale,scale,true,false,false,true,scale);
 
         var rad2 = ((angle+arrowAngle) * Math.PI)/180;
         var xb = x1 + (arrowLength * Math.cos(rad2));
         var yb = y1 + (arrowLength * Math.sin(rad2));
-        var line2 = addLine(group_lines,x1,y1,xb,yb,thickness);
+        var line2 = addLine(group_lines,x1,y1,xb,yb,thickness,'black');
         line2.resize(scale,scale,true,false,false,true,scale);
     }
 }
@@ -201,7 +202,7 @@ function sunLinePerspective(doc, number, size, x1, y1, x2, y2, opacity) {
 
     for (var i = 0; i < number; i++) {
         var group_sun = group_suns.groupItems.add();
-        sun(doc,group_sun,y,x,size,scale,"yellow",opacity);
+        sun(group_sun,y,x,size,scale,"yellow",opacity);
         y = y + yper;
         x = x + xper;
         scale = scale * factor;
@@ -221,10 +222,10 @@ function sunRadial(doc, number, sizeSun, size, xin, yin, scale, radius, color, s
         x = len * Math.cos(rad) + xin;
         y = len * Math.sin(rad) + yin;
         var group_g1 = group_sun_radial.groupItems.add();
-        g1(doc,group_g1,y,x,size,ang-90,100,color,stroke,jetWidth);
+        g1(group_g1,y,x,size,ang-90,100,color,stroke,jetWidth);
     }
     var group_sun = group_sun_radial.groupItems.add();
-    sun(doc,group_sun,yin,xin - sizeSun/1.5,sizeSun,100,"yellow",100);
+    sun(group_sun,yin,xin - sizeSun/1.5,sizeSun,100,"yellow",100);
     
     group_sun_radial.resize(scale,scale);
     group_sun_radial.opacity = (100 - scale) / 3 + scale;
@@ -258,12 +259,57 @@ function field(doc, obj, color, num, size, min, max, width, height) {
         top = Math.round(Math.random() * height) + (h - height)/2;
         left = Math.round(Math.random() * width) + (w - width)/2;
         angle = Math.round(Math.random() * 360);
-        scale = min + Math.round(Math.random() * (max - min));
+        scale = Math.floor(min + (Math.random() * (max - min)));
     
+        var group_g1 = group_field.groupItems.add();
         if (obj == 'sun')
             sun(doc,top,left,size,scale,color);
         else
-            g1(doc,top,left,size,angle,scale,color);
+            g1(group_g1,top,left,size,angle,scale,color,0.7,0.35);
+    }
+}
+
+function drawFlowPlaced(doc,posx,posy,number,color,width,height,size,angleStart,angleTotal) {
+    var group_flow = doc.groupItems.add();
+
+    for (var i = 0; i < number; i++) {
+        top = Math.round(Math.random() * height) + height/2 + posy;
+        left = Math.round(Math.random() * width) + width/2 + posx;
+        angle = angleStart + Math.round(Math.random() * angleTotal);
+        scale = 70 + (Math.random() * 30);
+
+        var group_g1 = group_flow.groupItems.add();
+        g1(group_g1,top,left,size,angle,100,color,0.7,0.4);
+    }
+}
+
+function drawFlow(group_flow,number,color,width,height,size,angleStart,angleTotal) {
+    var doc = getDoc();
+    var w = doc.width;
+    var h = doc.height;
+
+    for (var i = 0; i < number; i++) {
+        top = Math.round(Math.random() * height) + (h - height)/2;
+        left = Math.round(Math.random() * width) + (w - width)/2;
+        angle = angleStart + Math.round(Math.random() * angleTotal);
+        scale = 70 + (Math.random() * 30);
+
+        var group_g1 = group_flow.groupItems.add();
+        g1(group_g1,top,left,size,angle,100,color,0.7,0.4);
+    }
+}
+
+function drawWave (group_waves,number,x,y,g1Number,spacing,color) {
+    var step = Math.PI / number;
+    var ang = 0;
+    var group_wave = group_waves.groupItems.add();
+
+    for (var i = 0; i < number + 1; i++) {
+        num = Math.floor((Math.sin(ang)) * g1Number);
+        if (num == 0) num = Math.floor(Math.random() * 3) + 1;
+        drawFlowPlaced(group_wave,x,y,num,color,50,20,6,-10,20);
+        y = y + spacing;
+        ang = ang + step;
     }
 }
 
@@ -274,6 +320,11 @@ function colorByName(colorName) {
         case 'blue':
             colorRef.red = 0;
             colorRef.green = 0;
+            colorRef.blue = 255;
+            break;
+        case 'lightblue':
+            colorRef.red = 150;
+            colorRef.green = 150;
             colorRef.blue = 255;
             break;
         case 'red':
@@ -301,16 +352,27 @@ function colorByName(colorName) {
             colorRef.green = 255;
             colorRef.blue = 0;
             break;
+        case 'green':
+            colorRef.red = 0;
+            colorRef.green = 255;
+            colorRef.blue = 0;
+            break;
+        case 'brown':
+            colorRef.red = 159;
+            colorRef.green = 161;
+            colorRef.blue = 77;
+            break;
         default:
-          console.log('Sorry, we are out of ' + colorName + '.');
+            console.log('Sorry, we are out of ' + colorName + '.');
     }
     return colorRef;
 }
 
-function addLine(group, x1, y1, x2, y2, thickness)
+function addLine(group, x1, y1, x2, y2, thickness, color)
 {
     liners = group.pathItems.add();
     liners.strokeWidth = thickness;
+    liners.strokeColor = colorByName(color);
     liners.setEntirePath([[x1,y1],[x2,y2]]);
     return liners;
 }
