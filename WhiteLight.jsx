@@ -1,38 +1,20 @@
 #include "TPM.jsx";
 
-var group_waves = getDoc().groupItems.add();
-var waveCount = Number(prompt("How many color waves?","15"));
+var number = Number(prompt("Number of Waves","100"));
+if (number > 0) {
+    var color = prompt("Color?","white");
+    var width = prompt("Width?","500");
+    var height = prompt("Height?","500");
 
-for (var i = 0; i < waveCount + 1; i++) {
+    var group_flow = getDoc().groupItems.add();
 
-    var color = "white";
-    var g1Number = 20;
-    var spacing = 40;
+    for (var i = 0; i < number; i++) {
+        var w = Math.random()*10 + 5;
+        var h = Math.random()*60 + 10;
+        var top = Math.round(Math.random() * height) + (h - height)/2;
+        var left = Math.round(Math.random() * width) + (w - width)/2;
+        var num = Math.random()*10;
 
-    var factor = 9;
-    var num = Math.floor(1 + Math.random() * 3);
-
-    if (num == 1) {
-        color = "red";
-        g1Number = 10;
-        spacing = 90;
-        number = 5;
-    }
-    else if (num == 2) {
-        color = "green";
-        g1Number = 15;
-        spacing = 65;
-        number = 7;
-    }
-    else if (num == 3) {
-        color = "blue";
-        g1Number = 20;
-        spacing = 40;
-        number = 10;
-    }
-
-    var x = Math.random() * 700;
-    var y = Math.random() * 500;
-
-    drawWave(group_waves,number,x,y,g1Number,spacing,color);
+        drawFlow(group_flow,num,color,w,h,6,260,20,top,left);
+    }    
 }
