@@ -113,10 +113,9 @@ function drawEllipse(doc, number, size, width, height, thickness, xorg, yorg, co
         var h = height - thickness + Math.random() * thickness;
         var x = (w/2) * Math.cos(rad) + xorg;
         var y = (h/2) * Math.sin(rad) + yorg;
-        //pointText(doc,ang.toPrecision(4).toString()+" "+angle.toPrecision(4).toString(),x+8,y);
         scale = 70 + (Math.random() * 30);
         var group_g1 = group_ellipse.groupItems.add();
-        g1(doc,group_g1,y,x,size,ang-10,scale,color,0.7,0.35);
+        g1(group_g1,y,x,size,ang-10,scale,color,0.7,0.35);
      }
 }
 
@@ -188,7 +187,7 @@ function drawPerpLinesCircleShadow(doc, number, radius, length, thickness, xc, y
     }
 }
 
-function sunLinePerspective(doc, number, size, x1, y1, x2, y2, opacity) {
+function sunLinePerspective(doc, number, size, x1, y1, x2, y2, color, opacity) {
     var group_suns = doc.groupItems.add();
 
     var ystep = (y2 - y1) / number;
@@ -202,7 +201,7 @@ function sunLinePerspective(doc, number, size, x1, y1, x2, y2, opacity) {
 
     for (var i = 0; i < number; i++) {
         var group_sun = group_suns.groupItems.add();
-        sun(group_sun,y,x,size,scale,"yellow",opacity);
+        sun(group_sun,y,x,size,scale,color,opacity);
         y = y + yper;
         x = x + xper;
         scale = scale * factor;
@@ -211,13 +210,12 @@ function sunLinePerspective(doc, number, size, x1, y1, x2, y2, opacity) {
     }
 }
 
-function sunRadial(doc, number, sizeSun, size, xin, yin, scale, radius, color, stroke, jetWidth) {
-    var group_sun_radial = doc.groupItems.add();
+function sunRadial(group, number, sizeSun, size, xin, yin, scale, radius, color, stroke, jetWidth) {
+    var group_sun_radial = group.groupItems.add();
 
     for (var i = 0; i < number; i++) {
         var ang = Math.random()*360;
         var rad = (ang * Math.PI)/180;
-        //var len = Math.random()*(radius-sizeSun) + sizeSun/2;
         var len = i*i/number + sizeSun/2;
         x = len * Math.cos(rad) + xin;
         y = len * Math.sin(rad) + yin;
@@ -231,10 +229,12 @@ function sunRadial(doc, number, sizeSun, size, xin, yin, scale, radius, color, s
     group_sun_radial.opacity = (100 - scale) / 3 + scale;
 }
 
-function sunsRadial(doc, numSun, sunSize, numG1s, color, size, stroke, jetWidth, radius, width, height, min, max) {
+function sunsRadial(numSun, sunSize, numG1s, color, size, stroke, jetWidth, radius, width, height, min, max) {
+    var doc = getDoc();
     var w = doc.width;
     var h = doc.height;
     var scales = [];
+    var group_radial = doc.groupItems.add();
 
     for (var i = 0; i < numSun; i++) {
         scales.push(min + Math.round(Math.random() * (max - min)));
@@ -246,11 +246,12 @@ function sunsRadial(doc, numSun, sunSize, numG1s, color, size, stroke, jetWidth,
         left = Math.round(Math.random() * width) + (w - width)/2;
         scale = scales[i];
     
-        var sun = sunRadial(doc,numG1s,sunSize,size,left,top,scale,radius,color,stroke,jetWidth);
+        var sun = sunRadial(group_radial,numG1s,sunSize,size,left,top,scale,radius,color,stroke,jetWidth);
     }
 }
 
 function field(doc, obj, color, num, size, min, max, width, height) {
+    var doc = getDoc();
     var w = doc.width;
     var h = doc.height;
     var group_field = doc.groupItems.add();
@@ -263,7 +264,7 @@ function field(doc, obj, color, num, size, min, max, width, height) {
     
         var group_g1 = group_field.groupItems.add();
         if (obj == 'sun')
-            sun(doc,top,left,size,scale,color);
+            sun(group_g1,top,left,size,scale,color,100);
         else
             g1(group_g1,top,left,size,angle,scale,color,0.7,0.35);
     }
@@ -283,14 +284,14 @@ function drawFlowPlaced(doc,posx,posy,number,color,width,height,size,angleStart,
     }
 }
 
-function drawFlow(group_flow,number,color,width,height,size,angleStart,angleTotal) {
+function drawFlow(group_flow,number,color,width,height,size,angleStart,angleTotal,adjusttop,adjustleft) {
     var doc = getDoc();
     var w = doc.width;
     var h = doc.height;
 
     for (var i = 0; i < number; i++) {
-        top = Math.round(Math.random() * height) + (h - height)/2;
-        left = Math.round(Math.random() * width) + (w - width)/2;
+        top = Math.round(Math.random() * height) + (h - height)/2 + adjusttop;
+        left = Math.round(Math.random() * width) + (w - width)/2 + adjustleft;
         angle = angleStart + Math.round(Math.random() * angleTotal);
         scale = 70 + (Math.random() * 30);
 

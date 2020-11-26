@@ -16,7 +16,7 @@ while (top >= 0) {
     shift = shift * -1;
     left = spacing + shift;
     while (left < width) {
-        sun(doc,group_sun,top,left,7,100,"brown",100);
+        sun(group_sun,top,left,7,100,"brown",100);
         left = left + spacing;
     }
     top = top - spacing;
