@@ -15,5 +15,5 @@ for (var i = 0; i < number; i++) {
     scale = 70 + Math.round(Math.random() * 30);
 
     //g1(doc,top,left,angle,scale,"white");
-    g1(doc,top,left,size,angle,scale,"white");
+    g1(doc,top,left,size,angle,scale,"white",0);
 }

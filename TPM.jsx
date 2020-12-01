@@ -1,3 +1,126 @@
+function graviticCanvasField(group_field,number,width,height,size,object,objectColor,gColor,canvasOnly) {
+    var canvas = fieldCanvas(group_field,width,height,size,object,objectColor,gColor);
+    this.drawCanvas(canvas);
+    if (canvasOnly == false) {
+        for (var i = 0; i < number; i++) {
+            randomLine(canvas);
+        }
+    }
+}
+
+function fieldCanvas(doc,width,height,size,object,objectColor,gColor) {
+    var canvas = {
+        doc: doc,
+        width: width,
+        height: height,
+        size: size,
+        object: object,
+        objectColor: objectColor,
+        gColor: gColor,
+        isObject : function(squareNumber) {
+            for (var i = 0; i < this.object.length; i++) {
+                var square = this.object[i];
+                if (square == squareNumber)
+                    return true;
+            }
+            return false;
+        },
+        canvasWidth : function() {
+            return this.width * this.size;
+        },
+        canvasHeight : function() {
+            return this.height * this.size;
+        }
+    }
+    return canvas;
+}
+
+function drawCanvas(canvas) {
+    var group_canvas = canvas.doc.groupItems.add();
+    group_canvas.name = "Canvas";
+
+    for (var i = 0; i < canvas.height; i++) {
+        for (var j = 0; j < canvas.width; j++) {
+            var top = -i*canvas.size;
+            var left = j*canvas.size;
+            var squareNumber = j + i * canvas.width + 1;
+            var square = group_canvas.pathItems.rectangle(top,left,canvas.size,canvas.size);
+            square.strokeWidth = 0.25;
+            if (canvas.isObject(squareNumber))
+                square.fillColor = colorByName(canvas.objectColor);
+            else
+                square.fillColor = colorByName('white');
+            //pointText(group_canvas,squareNumber.toString(),left,top);
+        }
+    }
+}
+
+function randomLine(canvas) {
+    var side1 = Math.ceil(Math.random() * 4);
+    var side2 = Math.ceil(Math.random() * 4);
+    while (side2 == side1) {
+        side2 = Math.ceil(Math.random() * 4);
+    }
+    var x1 = Math.random() * canvas.width * canvas.size;
+    var y1 = Math.random() * canvas.height * canvas.size * -1;
+    var x2 = Math.random() * canvas.width * canvas.size;
+    var y2 = Math.random() * canvas.height * canvas.size * -1;
+
+    if (side1 == 1) {
+        y1 = 0;
+    } else if (side1 == 3) {
+        y1 = -canvas.height * canvas.size;
+    } else if (side1 == 2) {
+        x1 = canvas.width * canvas.size;
+    } else if (side1 == 4) {
+        x1 = 0;
+    }
+
+    if (side2 == 1) {
+        y2 = 0;
+    } else if (side2 == 3) {
+        y2 = -canvas.height * canvas.size;
+    } else if (side2 == 2) {
+        x2 = canvas.width * canvas.size;
+    } else if (side2 == 4) {
+        x2 = 0;
+    }
+
+    //var line_group = canvas.doc.groupItems.add();
+    //addLine(line_group,x1,y1,x2,y2,0.15,'black');
+
+    var spacing = 30;
+    var dist = Math.sqrt((x2-x1)*(x2-x1) + (y2-y1)*(y2-y1));
+    var num = Math.ceil(dist / spacing);
+    var stepx = (x2 - x1) / num;
+    var stepy = (y2 - y1) / num;
+    var angle = Math.atan2(y2-y1, x2-x1) * 180 / Math.PI - 90;
+
+    var group_g1s = canvas.doc.groupItems.add();
+    group_g1s.name = "G1 Field";
+
+    for (var i = 0; i < num; i++) {
+        var varyStep = Math.random() - 0.5;
+        var stepVaryX = stepx*varyStep;
+        var stepVaryY = stepy*varyStep;
+        var top = x1 + i*stepx + stepVaryX;
+        var left = y1 + i*stepy + stepVaryY;
+        var g1_group = group_g1s.groupItems.add();
+        g1_group.name = "G1 Particle";
+        if (pointInObject(canvas,top,left))
+            break;
+        g1(g1_group,left,top,6,angle,50,canvas.gColor,0.7,0.4,1);
+        
+    }
+}
+
+function pointInObject(canvas,top,left) {
+    var x = Math.abs(Math.ceil(top / canvas.size));
+    var y = Math.abs(Math.ceil(left / canvas.size));
+    var squareNumber = x + y * canvas.width;
+    return canvas.isObject(squareNumber);
+}
+
 function getDoc() {
     var doc;
     if (app.documents.length == 0) {
@@ -16,7 +139,7 @@ function getDoc() {
     return doc;
 }
 
-function g1(group_g1,top,left,size,angle,scale,color,stroke,jetWidth) {
+function g1(group_g1,top,left,size,angle,scale,color,stroke,jetWidth,tails) {
     var ctop = top - size / 2; 
     var cleft = left + size / 2;
     var min = 6.8;
@@ -26,6 +149,12 @@ function g1(group_g1,top,left,size,angle,scale,color,stroke,jetWidth) {
     var l1 = 0;
     var l2 = 0;
     var l3 = 0;
+
+    if (tails > 0) {
+        if (tails == 3) combo = 6;
+        else if (tails == 2) combo = 5;
+        else if (tails == 1) combo = 1;
+    }
 
     if (combo <= 1) {
         l1 = true;
@@ -115,7 +244,7 @@ function drawEllipse(doc, number, size, width, height, thickness, xorg, yorg, co
         var y = (h/2) * Math.sin(rad) + yorg;
         scale = 70 + (Math.random() * 30);
         var group_g1 = group_ellipse.groupItems.add();
-        g1(group_g1,y,x,size,ang-10,scale,color,0.7,0.35);
+        g1(group_g1,y,x,size,ang-10,scale,color,0.7,0.35,0);
      }
 }
 
@@ -220,7 +349,7 @@ function sunRadial(group, number, sizeSun, size, xin, yin, scale, radius, color,
         x = len * Math.cos(rad) + xin;
         y = len * Math.sin(rad) + yin;
         var group_g1 = group_sun_radial.groupItems.add();
-        g1(group_g1,y,x,size,ang-90,100,color,stroke,jetWidth);
+        g1(group_g1,y,x,size,ang-90,100,color,stroke,jetWidth,0);
     }
     var group_sun = group_sun_radial.groupItems.add();
     sun(group_sun,yin,xin - sizeSun/1.5,sizeSun,100,"yellow",100);
@@ -266,7 +395,7 @@ function field(doc, obj, color, num, size, min, max, width, height) {
         if (obj == 'sun')
             sun(group_g1,top,left,size,scale,color,100);
         else
-            g1(group_g1,top,left,size,angle,scale,color,0.7,0.35);
+            g1(group_g1,top,left,size,angle,scale,color,0.7,0.35,0);
     }
 }
 
@@ -280,7 +409,7 @@ function drawFlowPlaced(doc,posx,posy,number,color,width,height,size,angleStart,
         scale = 70 + (Math.random() * 30);
 
         var group_g1 = group_flow.groupItems.add();
-        g1(group_g1,top,left,size,angle,100,color,0.7,0.4);
+        g1(group_g1,top,left,size,angle,100,color,0.7,0.4,0);
     }
 }
 
@@ -296,7 +425,7 @@ function drawFlow(group_flow,number,color,width,height,size,angleStart,angleTota
         scale = 70 + (Math.random() * 30);
 
         var group_g1 = group_flow.groupItems.add();
-        g1(group_g1,top,left,size,angle,100,color,0.7,0.4);
+        g1(group_g1,top,left,size,angle,100,color,0.7,0.4,0);
     }
 }
 
@@ -385,6 +514,7 @@ function pointText(doc, tex, x, y)
 	pointText.contents = tex;
 	pointText.top = y;
     pointText.left = x;
+    pointText.size = 8;
 
     //var debugStyle = doc.characterStyles.getByName("debug");
     //debugStyle.applyTo(pointText.textRange);
