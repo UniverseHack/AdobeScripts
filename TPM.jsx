@@ -1,5 +1,5 @@
-function graviticCanvasField(group_field,number,width,height,size,object,objectColor,gColor,canvasOnly) {
-    var canvas = fieldCanvas(group_field,width,height,size,object,objectColor,gColor);
+function graviticCanvasField(group_field,number,width,height,size,spacing,object,reduction,objectColor,impactColor,passColor,gridText,canvasOnly) {
+    var canvas = fieldCanvas(group_field,width,height,size,spacing,object,reduction,objectColor,impactColor,passColor,gridText);
     this.drawCanvas(canvas);
     if (canvasOnly == false) {
         for (var i = 0; i < number; i++) {
@@ -8,15 +8,20 @@ function graviticCanvasField(group_field,number,width,height,size,object,objectC
     }
 }
 
-function fieldCanvas(doc,width,height,size,object,objectColor,gColor) {
+function fieldCanvas(doc,width,height,size,spacing,object,reduction,objectColor,impactColor,passColor,gridText) {
     var canvas = {
         doc: doc,
         width: width,
         height: height,
         size: size,
+        spacing: spacing,
         object: object,
         objectColor: objectColor,
-        gColor: gColor,
+        impactColor: impactColor,
+        passColor: passColor,
+        reduction: reduction,
+        gridText: gridText,
+        square: 0,
         isObject : function(squareNumber) {
             for (var i = 0; i < this.object.length; i++) {
                 var square = this.object[i];
@@ -50,7 +55,8 @@ function drawCanvas(canvas) {
                 square.fillColor = colorByName(canvas.objectColor);
             else
                 square.fillColor = colorByName('white');
-            //pointText(group_canvas,squareNumber.toString(),left,top);
+            if (canvas.gridText)
+                pointText(group_canvas,squareNumber.toString(),left,top);
         }
     }
 }
@@ -86,20 +92,25 @@ function randomLine(canvas) {
         x2 = 0;
     }
 
-    //var line_group = canvas.doc.groupItems.add();
-    //addLine(line_group,x1,y1,x2,y2,0.15,'black');
+    var group_g1s = canvas.doc.groupItems.add();
 
-    var spacing = 30;
+    //addLine(group_g1s,x1,y1,x2,y2,0.15,'black');
+
     var dist = Math.sqrt((x2-x1)*(x2-x1) + (y2-y1)*(y2-y1));
+    var angle = Math.atan2(y2-y1, x2-x1) * 180 / Math.PI - 90;
+
+    group_g1s.name = "G1 Field";
+    var passing = false;
+    var color = canvas.impactColor;
+    var spacing = canvas.spacing;
     var num = Math.ceil(dist / spacing);
     var stepx = (x2 - x1) / num;
     var stepy = (y2 - y1) / num;
-    var angle = Math.atan2(y2-y1, x2-x1) * 180 / Math.PI - 90;
+    var squaresPassed = 0;
+    var lastSquare = 0;
+    var iMod = 1;
 
-    var group_g1s = canvas.doc.groupItems.add();
-    group_g1s.name = "G1 Field";
-
-    for (var i = 0; i < num; i++) {
+    for (var i = 0; i < num; i += iMod) {
         var varyStep = Math.random() - 0.5;
         var stepVaryX = stepx*varyStep;
         var stepVaryY = stepy*varyStep;
@@ -107,18 +118,43 @@ function randomLine(canvas) {
         var left = y1 + i*stepy + stepVaryY;
         var g1_group = group_g1s.groupItems.add();
         g1_group.name = "G1 Particle";
-        if (pointInObject(canvas,top,left))
-            break;
-        g1(g1_group,left,top,6,angle,50,canvas.gColor,0.7,0.4,1);
-        
+        var drawit = true;
+
+        if (pointInObject(canvas,top,left)) {
+            if (canvas.reduction == 0)
+                break;
+            if (canvas.square != lastSquare)
+                squaresPassed++;
+            passing = true;
+            lastSquare = canvas.square;
+            drawit = false;
+
+        } else if (passing) {
+            color = canvas.passColor;
+            passing = false;
+            iMod = squaresPassed * canvas.reduction;
+            squaresPassed = 0;
+        }
+        if (drawit)
+            g1(g1_group,left,top,6,angle,50,color,0.7,0.4,1);
     }
 }
 
 function pointInObject(canvas,top,left) {
     var x = Math.abs(Math.ceil(top / canvas.size));
     var y = Math.abs(Math.ceil(left / canvas.size));
-    var squareNumber = x + y * canvas.width;
-    return canvas.isObject(squareNumber);
+    canvas.square = x + y * canvas.width;
+    return canvas.isObject(canvas.square);
+}
+
+function pointInCanvas(canvas,top,left) {
+    t = Math.abs(top);
+    l = Math.abs(left);
+    h = canvas.height * canvas.size;
+    w = canvas.width * canvas.size;
+    if ((t <= h && t >= 0) && (l <= w && l >= 0))
+        return true;
+    return false;
 }
 
 function getDoc() {
@@ -146,9 +182,9 @@ function g1(group_g1,top,left,size,angle,scale,color,stroke,jetWidth,tails) {
 
     var factor = 9;
     var combo = 1 + Math.random() * 6;
-    var l1 = 0;
-    var l2 = 0;
-    var l3 = 0;
+    var l1 = false;
+    var l2 = false;
+    var l3 = false;
 
     if (tails > 0) {
         if (tails == 3) combo = 6;
@@ -157,7 +193,7 @@ function g1(group_g1,top,left,size,angle,scale,color,stroke,jetWidth,tails) {
     }
 
     if (combo <= 1) {
-        l1 = true;
+        l2 = true;
     } else if (combo <= 2) {
         l2 = true;
     } else if (combo <= 3) {
