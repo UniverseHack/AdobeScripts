@@ -9,7 +9,7 @@ if (number > 0) {
     var height = 11;
     var size = 50;
     var spacing = 20;
-    var reduction = 2;
+    var reduction = 0;
     var gridText = false;
     var canvasOnly = false;
     var object = [11,26,41,56,71,76,77,78,79,80,81,82,83,84,85,86,101,116,131,146,161];

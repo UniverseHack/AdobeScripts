@@ -15,6 +15,8 @@ if (number > 0) {
         var left = Math.round(Math.random() * width) + (w - width)/2;
         var num = Math.random()*10;
 
-        drawFlow(group_flow,num,color,w,h,6,260,20,top,left);
+        var subgroup = group_flow.groupItems.add();
+
+        drawFlow(subgroup,num,color,w,h,6,260,20,top,left);
     }    
 }
