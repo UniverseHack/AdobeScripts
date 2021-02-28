@@ -1,16 +1,19 @@
-function graviticCanvasField(group_field,number,width,height,size,spacing,object,reduction,objectColor,impactColor,passColor,gridText,canvasOnly) {
-    var canvas = fieldCanvas(group_field,width,height,size,spacing,object,reduction,objectColor,impactColor,passColor,gridText);
-    this.drawCanvas(canvas);
+function graviticCanvasField(group_field,number,width,height,size,spacing,object,reduction,objectColor,impactColor,passColor,gridText,canvasOnly,drawLines) {
+    var canvas = fieldCanvas(width,height,size,spacing,object,reduction,objectColor,impactColor,passColor,gridText,drawLines);
+    this.drawCanvas(group_field,canvas);
+    var group_lines = group_field.groupItems.add();
+    group_lines.name = "G1 Field";
+
     if (canvasOnly == false) {
         for (var i = 0; i < number; i++) {
-            randomLine(canvas);
+            if (!randomLine(group_lines,canvas))
+                i--;
         }
     }
 }
 
-function fieldCanvas(doc,width,height,size,spacing,object,reduction,objectColor,impactColor,passColor,gridText) {
+function fieldCanvas(width,height,size,spacing,object,reduction,objectColor,impactColor,passColor,gridText,drawLines) {
     var canvas = {
-        doc: doc,
         width: width,
         height: height,
         size: size,
@@ -21,11 +24,23 @@ function fieldCanvas(doc,width,height,size,spacing,object,reduction,objectColor,
         passColor: passColor,
         reduction: reduction,
         gridText: gridText,
+        drawLines: drawLines,
         square: 0,
         isObject : function(squareNumber) {
+            var range = false;
             for (var i = 0; i < this.object.length; i++) {
                 var square = this.object[i];
-                if (square == squareNumber)
+                if (square < 0) {
+                    range = true;
+                    square = Math.abs(square);
+                } else if (range) {
+                    if (squareNumber < square)
+                        return true;
+                    range = false;
+                }
+                if (squareNumber < square)
+                    return false;
+                else if (square == squareNumber)
                     return true;
             }
             return false;
@@ -40,8 +55,8 @@ function fieldCanvas(doc,width,height,size,spacing,object,reduction,objectColor,
     return canvas;
 }
 
-function drawCanvas(canvas) {
-    var group_canvas = canvas.doc.groupItems.add();
+function drawCanvas(group,canvas) {
+    var group_canvas = group.groupItems.add();
     group_canvas.name = "Canvas";
 
     for (var i = 0; i < canvas.height; i++) {
@@ -50,94 +65,147 @@ function drawCanvas(canvas) {
             var left = j*canvas.size;
             var squareNumber = j + i * canvas.width + 1;
             var square = group_canvas.pathItems.rectangle(top,left,canvas.size,canvas.size);
-            square.strokeWidth = 0.25;
+            square.stroked = canvas.gridText;
             if (canvas.isObject(squareNumber))
                 square.fillColor = colorByName(canvas.objectColor);
             else
-                square.fillColor = colorByName('white');
+                square.filled = false;
             if (canvas.gridText)
                 pointText(group_canvas,squareNumber.toString(),left,top);
         }
     }
 }
 
-function randomLine(canvas) {
-    var side1 = Math.ceil(Math.random() * 4);
-    var side2 = Math.ceil(Math.random() * 4);
-    while (side2 == side1) {
-        side2 = Math.ceil(Math.random() * 4);
-    }
-    var x1 = Math.random() * canvas.width * canvas.size;
-    var y1 = Math.random() * canvas.height * canvas.size * -1;
-    var x2 = Math.random() * canvas.width * canvas.size;
-    var y2 = Math.random() * canvas.height * canvas.size * -1;
+function pickPoint(canvas) {
+    var width = canvas.width * canvas.size;
+    var height = canvas.height * canvas.size;
 
-    if (side1 == 1) {
+    var length = (width + height) * 2 * Math.random();
+    var x1 = 0;
+    var y1 = 0;
+    var x2 = 0;
+    var y2 = 0;
+    var side = 0;
+
+    if (length <= width) {
+        x1 = length;
         y1 = 0;
-    } else if (side1 == 3) {
-        y1 = -canvas.height * canvas.size;
-    } else if (side1 == 2) {
-        x1 = canvas.width * canvas.size;
-    } else if (side1 == 4) {
+        side = 1;
+    } else if (length <= width + height) {
+        x1 = width;
+        y1 = length - width;
+        side = 2;
+    } else if (length <= width + height + width) {
+        x1 = length - width - height;
+        y1 = height;
+        side = 3;
+    } else {
         x1 = 0;
+        y1 = length - width - height - width; 
+        side = 4;     
     }
 
-    if (side2 == 1) {
-        y2 = 0;
-    } else if (side2 == 3) {
-        y2 = -canvas.height * canvas.size;
-    } else if (side2 == 2) {
-        x2 = canvas.width * canvas.size;
-    } else if (side2 == 4) {
-        x2 = 0;
+    var point = {
+        "x": x1,
+        "y": -y1,
+        "side": side
     }
+    return point;
+}
 
-    var group_g1s = canvas.doc.groupItems.add();
+function randomLine(group, canvas) {
+    var width = canvas.width * canvas.size;
+    var height = canvas.height * canvas.size;
 
-    //addLine(group_g1s,x1,y1,x2,y2,0.15,'black');
+    var point1 = pickPoint(canvas);
+    var point2 = pickPoint(canvas);
+    while (point1.side == point2.side)
+        point2 = pickPoint(canvas);
+
+    var x1 = point1.x;
+    var y1 = point1.y;
+    var x2 = point2.x;
+    var y2 = point2.y;
+
+    var group_line = group.groupItems.add();
+    group_line.name = "G1 Line";
+
+    if (canvas.drawLines)
+        addLine(group_line,x1,y1,x2,y2,0.5,'gray');
 
     var dist = Math.sqrt((x2-x1)*(x2-x1) + (y2-y1)*(y2-y1));
     var angle = Math.atan2(y2-y1, x2-x1) * 180 / Math.PI - 90;
 
-    group_g1s.name = "G1 Field";
     var passing = false;
     var color = canvas.impactColor;
     var spacing = canvas.spacing;
     var num = Math.ceil(dist / spacing);
     var stepx = (x2 - x1) / num;
     var stepy = (y2 - y1) / num;
+    var stepxOrig = stepx;
+    var stepyOrig = stepy;
     var squaresPassed = 0;
     var lastSquare = 0;
-    var iMod = 1;
 
-    for (var i = 0; i < num; i += iMod) {
-        var varyStep = Math.random() - 0.5;
-        var stepVaryX = stepx*varyStep;
-        var stepVaryY = stepy*varyStep;
-        var top = x1 + i*stepx + stepVaryX;
-        var left = y1 + i*stepy + stepVaryY;
-        var g1_group = group_g1s.groupItems.add();
-        g1_group.name = "G1 Particle";
-        var drawit = true;
+    var top = x1;
+    var left = y1;
+    var hit = false;
+
+    for (var i = 0; i < num; i++) {
+        top += stepx;
+        left += stepy;
 
         if (pointInObject(canvas,top,left)) {
+            hit = true;
+            break;
+        }
+    }
+
+    if (hit == false)
+        return false;
+
+    top = x1;
+    left = y1;
+
+    for (var i = 0; i < num; i++) {
+        var stepVaryX = stepx*Math.random();
+        var stepVaryY = stepy*Math.random();
+        top += stepx;
+        left += stepy;
+        var topa = top + stepVaryX;
+        var lefta = left + stepVaryY;
+
+        if (topa > width || topa < 0 || lefta < -height || lefta > 0)
+            continue;
+
+        var drawit = true;
+
+        if (pointInObject(canvas,topa,lefta)) {
+            hit = true;
             if (canvas.reduction == 0)
                 break;
             if (canvas.square != lastSquare)
                 squaresPassed++;
             passing = true;
             lastSquare = canvas.square;
-            drawit = false;
+            drawit = false; 
 
         } else if (passing) {
             color = canvas.passColor;
             passing = false;
-            iMod = squaresPassed * canvas.reduction;
-            squaresPassed = 0;
+            stepx = stepxOrig + canvas.reduction*(squaresPassed*stepxOrig/2);
+            stepy = stepyOrig + canvas.reduction*(squaresPassed*stepyOrig/2);
+            drawit = false;
         }
-        if (drawit)
-            g1(g1_group,left,top,6,angle,50,color,0.7,0.4,1);
+
+        if (drawit) {
+            var g1_group = group_line.groupItems.add();
+            g1_group.name = "G1 Particle";
+            g1(g1_group,lefta,topa,6,angle,50,color,0.7,0.4,1);
+        }
     }
+
+    return true;
 }
 
 function pointInObject(canvas,top,left) {
@@ -508,10 +576,20 @@ function colorByName(colorName) {
             colorRef.green = 255;
             colorRef.blue = 255;
             break;
+        case 'orange':
+            colorRef.red = 255;
+            colorRef.green = 165;
+            colorRef.blue = 0;
+            break;
         case 'gray':
             colorRef.red = 180;
             colorRef.green = 180;
             colorRef.blue = 180;
+            break;
+        case 'darkgray':
+            colorRef.red = 260;
+            colorRef.green = 260;
+            colorRef.blue = 260;
             break;
         case 'yellow':
             colorRef.red = 255;
