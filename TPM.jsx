@@ -255,7 +255,7 @@ function g1(group_g1,top,left,size,angle,scale,color,stroke,jetWidth,tails) {
     var l3 = false;
 
     if (tails > 0) {
-        if (tails == 3) combo = 6;
+        if (tails == 3) combo = 7;
         else if (tails == 2) combo = 5;
         else if (tails == 1) combo = 1;
     }
@@ -282,12 +282,15 @@ function g1(group_g1,top,left,size,angle,scale,color,stroke,jetWidth,tails) {
     }
 
     var col = 'black';
-    var len = Math.random() * factor + min;
-    if (l1 == true) addLine(group_g1,cleft+1.8,ctop-3,cleft+1.5,ctop-len,jetWidth,col); // 7.4
-    len = Math.random() * factor+ min;
-    if (l2 == true) addLine(group_g1,cleft+0.2,ctop-3.5,cleft+0.3,ctop-len,jetWidth,col);  // 6.8
-    len = Math.random() * factor + min;
-    if (l3 == true) addLine(group_g1,cleft-1,ctop-3.3,cleft-0.6,ctop-len,jetWidth,col); // 10
+    // Scale the whole tail geometry with the particle size (6 is the default size) so the
+    // small gap that detaches the tails from the ball stays proportional at any size.
+    var sizeFactor = size / 6;
+    var len = (Math.random() * factor + min) * sizeFactor;
+    if (l1 == true) addLine(group_g1,cleft+1.8*sizeFactor,ctop-3*sizeFactor,cleft+1.5*sizeFactor,ctop-len,jetWidth,col); // 7.4
+    len = (Math.random() * factor+ min) * sizeFactor;
+    if (l2 == true) addLine(group_g1,cleft+0.2*sizeFactor,ctop-3.5*sizeFactor,cleft+0.3*sizeFactor,ctop-len,jetWidth,col);  // 6.8
+    len = (Math.random() * factor + min) * sizeFactor;
+    if (l3 == true) addLine(group_g1,cleft-1*sizeFactor,ctop-3.3*sizeFactor,cleft-0.6*sizeFactor,ctop-len,jetWidth,col); // 10
 
     var circle = group_g1.pathItems.ellipse(top,left,size,size,false,true);
     circle.strokeWidth = stroke;
@@ -503,17 +506,28 @@ function field(doc, obj, color, num, size, min, max, width, height) {
     }
 }
 
+function drawVariedG1(doc,posx,posy,color,width,height,size,angleStart,angleTotal) {
+    top = Math.round(Math.random() * height) + height/2 + posy;
+    left = Math.round(Math.random() * width) + width/2 + posx;
+    angle = angleStart + Math.round(Math.random() * angleTotal);
+    scale = 70 + (Math.random() * 30);
+
+    var group_g1 = doc.groupItems.add();
+    g1(group_g1,top,left,size,angle,scale,color,0.7,0.4,0);
+}
+
+
 function drawFlowPlaced(doc,posx,posy,number,color,width,height,size,angleStart,angleTotal) {
     var group_flow = doc.groupItems.add();
 
     for (var i = 0; i < number; i++) {
-        top = Math.round(Math.random() * height) + height/2 + posy;
-        left = Math.round(Math.random() * width) + width/2 + posx;
-        angle = angleStart + Math.round(Math.random() * angleTotal);
-        scale = 70 + (Math.random() * 30);
+        var top = Math.round(Math.random() * height) + height/2 + posy;
+        var left = Math.round(Math.random() * width) + width/2 + posx;
+        var angle = angleStart + Math.round(Math.random() * angleTotal);
+        var scale = 70 + (Math.random() * 30);
 
         var group_g1 = group_flow.groupItems.add();
-        g1(group_g1,top,left,size,angle,100,color,0.7,0.4,0);
+        g1(group_g1,top,left,size,angle,scale,color,0.7,0.4,0);
     }
 }
 
@@ -621,6 +635,239 @@ function addLine(group, x1, y1, x2, y2, thickness, color)
     return liners;
 }
 
+function calculatePathLength(path) {
+    var totalLength = 0;
+    var points = path.pathPoints;
+    
+    for (var i = 0; i < points.length - 1; i++) {
+        // Calculate Bezier curve length using multiple sampling points
+        var segmentLength = calculateBezierSegmentLength(points[i], points[i + 1]);
+        totalLength += segmentLength;
+    }
+    
+    return totalLength;
+}
+
+function calculateBezierSegmentLength(p1, p2) {
+    var samples = 50; // High sampling for accuracy
+    var totalLength = 0;
+    var prevPoint = getBezierPointOnSegment(p1, p2, 0);
+    
+    for (var i = 1; i <= samples; i++) {
+        var t = i / samples;
+        var currentPoint = getBezierPointOnSegment(p1, p2, t);
+        
+        var dx = currentPoint.x - prevPoint.x;
+        var dy = currentPoint.y - prevPoint.y;
+        totalLength += Math.sqrt(dx * dx + dy * dy);
+        
+        prevPoint = currentPoint;
+    }
+    
+    return totalLength;
+}
+
+function getBezierPointOnSegment(p1, p2, t) {
+    // Get the control points for this Bezier segment
+    var anchor1 = p1.anchor;
+    var control1 = p1.rightDirection;
+    var control2 = p2.leftDirection;
+    var anchor2 = p2.anchor;
+    
+    // Cubic Bezier formula: P(t) = (1-t)³P₀ + 3(1-t)²tP₁ + 3(1-t)t²P₂ + t³P₃
+    var t2 = t * t;
+    var t3 = t2 * t;
+    var mt = 1 - t;
+    var mt2 = mt * mt;
+    var mt3 = mt2 * mt;
+    
+    var x = mt3 * anchor1[0] + 3 * mt2 * t * control1[0] + 3 * mt * t2 * control2[0] + t3 * anchor2[0];
+    var y = mt3 * anchor1[1] + 3 * mt2 * t * control1[1] + 3 * mt * t2 * control2[1] + t3 * anchor2[1];
+    
+    return { x: x, y: y };
+}
+
+function getPointAtPathDistance(path, targetDistance) {
+    var currentDistance = 0;
+    var points = path.pathPoints;
+    
+    for (var i = 0; i < points.length - 1; i++) {
+        var p1 = points[i];
+        var p2 = points[i + 1];
+        
+        var segmentLength = calculateBezierSegmentLength(p1, p2);
+        
+        if (currentDistance + segmentLength >= targetDistance) {
+            // Find the t parameter along this Bezier curve
+            var remainingDistance = targetDistance - currentDistance;
+            var t = findBezierTAtDistance(p1, p2, remainingDistance, segmentLength);
+            
+            // Calculate point on Bezier curve at parameter t
+            return getBezierPointOnSegment(p1, p2, t);
+        }
+        
+        currentDistance += segmentLength;
+    }
+    
+    // Return last point if distance exceeds path length
+    var lastPoint = points[points.length - 1].anchor;
+    return { x: lastPoint[0], y: lastPoint[1] };
+}
+
+function findBezierTAtDistance(p1, p2, targetDistance, totalLength) {
+    // Use binary search to find the t parameter that gives us the target distance
+    var low = 0;
+    var high = 1;
+    var tolerance = 0.1; // Tolerance for distance matching
+    
+    for (var iter = 0; iter < 20; iter++) { // Max 20 iterations
+        var mid = (low + high) / 2;
+        var distance = calculatePartialBezierLength(p1, p2, mid);
+        
+        if (Math.abs(distance - targetDistance) < tolerance) {
+            return mid;
+        }
+        
+        if (distance < targetDistance) {
+            low = mid;
+        } else {
+            high = mid;
+        }
+    }
+    
+    return (low + high) / 2;
+}
+
+function calculatePartialBezierLength(p1, p2, maxT) {
+    var samples = Math.floor(maxT * 50); // Proportional sampling
+    if (samples < 1) return 0;
+    
+    var totalLength = 0;
+    var prevPoint = getBezierPointOnSegment(p1, p2, 0);
+    
+    for (var i = 1; i <= samples; i++) {
+        var t = (i / samples) * maxT;
+        var currentPoint = getBezierPointOnSegment(p1, p2, t);
+        
+        var dx = currentPoint.x - prevPoint.x;
+        var dy = currentPoint.y - prevPoint.y;
+        totalLength += Math.sqrt(dx * dx + dy * dy);
+        
+        prevPoint = currentPoint;
+    }
+    
+    return totalLength;
+}
+
+function getTangentAngleAtDistance(path, distance) {
+    // Get point at this distance and slightly ahead
+    var point = getPointAtPathDistance(path, distance);
+    if (!point) return 0;
+    
+    var epsilon = 0.5; // Small step ahead
+    var nextPoint = getPointAtPathDistance(path, distance + epsilon);
+    if (!nextPoint) {
+        // Try going backwards if we're at the end
+        nextPoint = getPointAtPathDistance(path, distance - epsilon);
+        if (!nextPoint) return 0;
+        
+        // Reverse the direction calculation
+        var dx = point.x - nextPoint.x;
+        var dy = point.y - nextPoint.y;
+    } else {
+        var dx = nextPoint.x - point.x;
+        var dy = nextPoint.y - point.y;
+    }
+    
+    // Return angle in degrees
+    return Math.atan2(dy, dx) * 180 / Math.PI;
+}
+
+function drawParticleFlowOnPath(flowWidthStart, flowWidthEnd, particlesDensity, color, sizeStart, sizeEnd) {
+    var doc = getDoc();
+    var selectedItems = doc.selection;
+    
+    // Check if a path is selected
+    if (selectedItems.length === 0) {
+        alert("Please select a path first.");
+        return;
+    }
+    
+    var path = selectedItems[0];
+    if (path.typename !== "PathItem") {
+        alert("Selected object is not a path.");
+        return;
+    }
+    
+    // Set default values
+    flowWidthStart = flowWidthStart || 40;
+    flowWidthEnd = flowWidthEnd || 10;
+    particlesDensity = particlesDensity || 5;
+    color = color || 'blue';
+    sizeStart = sizeStart || 6;
+    sizeEnd = sizeEnd || 3;
+    
+    // Create main group for all particles
+    var flowGroup = doc.groupItems.add();
+    flowGroup.name = "Particle Flow on Path";
+    
+    var pathPoints = path.pathPoints;
+    if (pathPoints.length < 2) {
+        alert("Path needs at least 2 points.");
+        return;
+    }
+    
+    // Calculate approximate path length
+    var totalPathLength = calculatePathLength(path);
+    var stepDistance = 8; // Distance between sampling points along path
+    var numSteps = Math.floor(totalPathLength / stepDistance);
+    
+    // Create continuous flow along the path
+    for (var i = 0; i <= numSteps; i++) {
+        var distance = i * stepDistance;
+        
+        // Calculate interpolated flow width and size based on position along path
+        var progress = distance / totalPathLength; // 0 to 1 from start to end
+        var currentFlowWidth = flowWidthStart + (flowWidthEnd - flowWidthStart) * progress;
+        var currentSize = sizeStart + (sizeEnd - sizeStart) * progress;
+        
+        var pathPoint = getPointAtPathDistance(path, distance);
+        var tangentAngle = getTangentAngleAtDistance(path, distance);
+        
+        if (pathPoint) {
+            // Create particles at this cross-section
+            createParticlesCrossSection(flowGroup, pathPoint.x, pathPoint.y, 
+                                      tangentAngle, currentFlowWidth, particlesDensity, color, currentSize);
+        }
+    }
+}
+
+function createParticlesCrossSection(parentGroup, x, y, tangentAngle, width, particleCount, color, size) {
+    // Convert angles to radians
+    var perpendicularRad = (tangentAngle + 90) * Math.PI / 180;
+    
+    // Calculate perpendicular direction for width distribution
+    var cosPerp = Math.cos(perpendicularRad);
+    var sinPerp = Math.sin(perpendicularRad);
+    
+    for (var i = 0; i < particleCount; i++) {
+        // Random position across the width
+        var crossPosition = (Math.random() - 0.5) * width;
+        
+        // Calculate final position
+        var finalX = x + crossPosition * cosPerp;
+        var finalY = y + crossPosition * sinPerp;
+        
+        // Create individual particle group
+        var particleGroup = parentGroup.groupItems.add();
+        particleGroup.name = "Flow Particle";
+        
+        // Create the g1 particle directly with the interpolated size and scaled jetWidth
+        var scaledJetWidth = (size / 6) * 0.4; // Scale jetWidth with particle size
+        g1(particleGroup, finalY, finalX, size, tangentAngle - 90, 100, color, 0.7, scaledJetWidth, 0);
+    }
+}
+
 function pointText(doc, tex, x, y)
 {
 	// Point Text
@@ -633,3 +880,163 @@ function pointText(doc, tex, x, y)
     //var debugStyle = doc.characterStyles.getByName("debug");
     //debugStyle.applyTo(pointText.textRange);
 }
+
+function drawParticleWaveOnPath(waveWidthStart, waveWidthEnd, particlesPerWave, waveSpacingStart, waveSpacingEnd, color, sizeStart, sizeEnd) {
+    var doc = getDoc();
+    var selectedItems = doc.selection;
+    
+    // Check if a path is selected
+    if (selectedItems.length === 0) {
+        alert("Please select a path first.");
+        return;
+    }
+    
+    var path = selectedItems[0];
+    if (path.typename !== "PathItem") {
+        alert("Selected object is not a path.");
+        return;
+    }
+    
+    // Set default values
+    waveWidthStart = waveWidthStart || 80;
+    waveWidthEnd = waveWidthEnd || 20;
+    particlesPerWave = particlesPerWave || 8;
+    waveSpacingStart = waveSpacingStart || 25;
+    waveSpacingEnd = waveSpacingEnd || 50;
+    color = color || 'blue';
+    sizeStart = sizeStart || 6;
+    sizeEnd = sizeEnd || 3;
+    
+    // Create main group for all waves
+    var wavesGroup = doc.groupItems.add();
+    wavesGroup.name = "Particle Waves on Path";
+    
+    var pathPoints = path.pathPoints;
+    if (pathPoints.length < 2) {
+        alert("Path needs at least 2 points.");
+        return;
+    }
+    
+    // Calculate total path length using the smooth path calculation
+    var totalLength = calculatePathLength(path);
+    
+    // Calculate wave positions with interpolated spacing
+    var wavePositions = [];
+    var currentDistance = 0;
+    var waveIndex = 0;
+    
+    // Add the first wave at the start
+    wavePositions.push(0);
+    
+    while (currentDistance < totalLength) {
+        // Calculate progress for interpolating spacing (0 to 1)
+        var progress = currentDistance / totalLength;
+        
+        // Interpolate spacing based on current position
+        var currentSpacing = waveSpacingStart + (waveSpacingEnd - waveSpacingStart) * progress;
+        
+        // Move to next wave position
+        currentDistance += currentSpacing;
+        
+        // Add position if it's within the path length
+        if (currentDistance <= totalLength) {
+            wavePositions.push(currentDistance);
+        }
+    }
+    
+    // Create waves at calculated positions
+    for (var w = 0; w < wavePositions.length; w++) {
+        var distance = wavePositions[w];
+        
+        // Calculate interpolated wave width and size based on position along path
+        var progress = distance / totalLength; // 0 to 1 from start to end
+        var currentWaveWidth = waveWidthStart + (waveWidthEnd - waveWidthStart) * progress;
+        var currentSize = sizeStart + (sizeEnd - sizeStart) * progress;
+        
+        // Get position and direction at this distance along the smooth path
+        var pathPoint = getPointAtPathDistance(path, distance);
+        var pathAngle = getTangentAngleAtDistance(path, distance);
+        
+        if (pathPoint) {
+            createPerpendicularWaveAtPoint(wavesGroup, pathPoint.x, pathPoint.y, 
+                                         pathAngle, currentWaveWidth, particlesPerWave, color, currentSize, w);
+        }
+    }
+}
+
+function getPathPositionAndDirection(pathPoints, t) {
+    if (pathPoints.length < 2) return null;
+    
+    // Clamp t to [0, 1]
+    t = Math.max(0, Math.min(1, t));
+    
+    // Find which segment we're on
+    var segmentFloat = t * (pathPoints.length - 1);
+    var segmentIndex = Math.floor(segmentFloat);
+    var segmentT = segmentFloat - segmentIndex;
+    
+    // Handle edge case
+    if (segmentIndex >= pathPoints.length - 1) {
+        var lastPoint = pathPoints[pathPoints.length - 1].anchor;
+        var prevPoint = pathPoints[pathPoints.length - 2].anchor;
+        var dx = lastPoint[0] - prevPoint[0];
+        var dy = lastPoint[1] - prevPoint[1];
+        var angle = Math.atan2(dy, dx) * 180 / Math.PI;
+        return { x: lastPoint[0], y: lastPoint[1], angle: angle };
+    }
+    
+    // Linear interpolation between adjacent anchor points
+    var p1 = pathPoints[segmentIndex].anchor;
+    var p2 = pathPoints[segmentIndex + 1].anchor;
+    
+    var x = p1[0] + (p2[0] - p1[0]) * segmentT;
+    var y = p1[1] + (p2[1] - p1[1]) * segmentT;
+    
+    // Calculate direction angle
+    var dx = p2[0] - p1[0];
+    var dy = p2[1] - p1[1];
+    var angle = Math.atan2(dy, dx) * 180 / Math.PI;
+    
+    return { x: x, y: y, angle: angle };
+}
+
+function createPerpendicularWaveAtPoint(parentGroup, centerX, centerY, pathAngle, waveWidth, particleCount, color, size, waveIndex) {
+    var waveGroup = parentGroup.groupItems.add();
+    waveGroup.name = "Wave " + (waveIndex + 1);
+    
+    // Calculate perpendicular angle (90 degrees from path)
+    var perpAngle = pathAngle + 90;
+    var perpRad = perpAngle * Math.PI / 180;
+    
+    // Create particles randomly distributed along the perpendicular line
+    for (var i = 0; i < particleCount; i++) {
+        // Random position along the perpendicular line
+        var randomDistance = (Math.random() - 0.5) * waveWidth;
+        
+        // Calculate particle position
+        var particleX = centerX + randomDistance * Math.cos(perpRad);
+        var particleY = centerY + randomDistance * Math.sin(perpRad);
+        
+        // Add small random offset for natural look
+        particleX += (Math.random() - 0.5) * 8;
+        particleY += (Math.random() - 0.5) * 8;
+        
+        // Random particle size variation
+        var particleSize = size + (Math.random() - 0.5) * size * 0.6; // ±30% size variation
+        particleSize = Math.max(2, particleSize); // Minimum size
+        
+        // Random scale variation
+        var scale = 80 + (Math.random() * 40); // 80-120% scale
+        
+        // Particle angle should be perpendicular to path direction with some variation
+        var particleAngle = pathAngle + 90 + (Math.random() - 0.5) * 45; // ±22.5 degrees
+        
+        // Create the g1 particle
+        var particleGroup = waveGroup.groupItems.add();
+        particleGroup.name = "Wave Particle " + (i + 1);
+        var scaledJetWidth = (particleSize / 6) * 0.4; // Scale jetWidth with particle size
+        g1(particleGroup, particleY, particleX, particleSize, particleAngle, scale, color, 0.7, scaledJetWidth, 0);
+    }
+}
+
+
